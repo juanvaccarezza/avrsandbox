@@ -11,7 +11,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-#define FOSC 2000000
+#define FOSC 12000000
 #define BAUD 9600
 #define MYUBRR (FOSC/16/BAUD-1)
 
@@ -43,10 +43,10 @@ int main (void)
 		printf("Test it! x = %d\n", x);
 
 		sbi(PORTC, STATUS_LED);
-		_delay_ms(500);
+		_delay_ms(1000);
 
 		cbi(PORTC, STATUS_LED);
-		_delay_ms(500);
+		_delay_ms(1000);
     }
 
     return(0);
@@ -54,18 +54,16 @@ int main (void)
 
 void ioinit (void)
 {
-    //1 = output, 0 = input
-    DDRB = 0b11101111; //PB4 = MISO
-    DDRC = 0b11111111; //
-    DDRD = 0b11111110; //PORTD (RX on PD0)
+	sbi(DDRC,DDC0);
+	/* Set baud rate */
+	UBRR0H = (unsigned char)(MYUBRR>>8);
+	UBRR0L = (unsigned char)MYUBRR;
+	/* Enable receiver and transmitter */
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	/* Set frame format: 8data, 2stop bit */
+	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+	stdout = &mystdout;
 
-    //USART Baud rate: 9600
-    UBRRH = MYUBRR >> 8;
-    UBRRL = MYUBRR;
-    UCSRB = (1<<RXEN)|(1<<TXEN);
-    /* Set frame format: 8data, 2stop bit */
-    UCSRC = (1 << URSEL) | (1 << USBS) | (3 << UCSZ0);
-    stdout = &mystdout; //Required for printf init
 }
 
 
@@ -73,15 +71,15 @@ static int uart_putchar(char c, FILE *stream)
 {
     if (c == '\n') uart_putchar('\r', stream);
 
-    loop_until_bit_is_set(UCSRA, UDRE);
-    UDR = c;
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
 
     return 0;
 }
 
 uint8_t uart_getchar(void)
 {
-    while( !(UCSRA & (1<<RXC)) );
-    return(UDR);
+    while( !(UCSR0A & (1<<RXC0)) );
+    return(UDR0);
 }
 
