@@ -12,6 +12,8 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "TWI_Master.h"
+#include "sevenSegment.h"
+
 
 // Sample TWI transmission commands
 #define TWI_CMD_MASTER_WRITE 0x10
@@ -64,9 +66,23 @@ void waitForI2C() {
 
 int main (void)
 {
-	uint8_t x = 0;
+	uint16_t x = 0;
 	unsigned char messageBuf[4];
 	unsigned char TWI_targetSlaveAddress;
+
+	sevenSegDescriptor segDesc;
+	displayCommon common [2];
+
+	common[0].pinNo = 0;
+	common[0].port = (uint8_t *)&PORTB;
+
+	common[1].pinNo = 1;
+	common[1].port = (uint8_t *)&PORTB;
+
+	segDesc.amountOfDisplays=2;
+	segDesc.commonAnnode = true;
+	segDesc.ledPort = (uint8_t *) &PORTA;
+	segDesc.common = common;
 
 	TWI_targetSlaveAddress   = 0b01101111;
 
@@ -92,37 +108,33 @@ int main (void)
 
     while(1)
     {
+
+		//printf("Test it! x = %d\n", x);
+
 		x++;
-
-		printf("Test it! x = %d\n", x);
-
-		sbi(PORTC, STATUS_LED);
-		_delay_ms(1000);
-
-		cbi(PORTC, STATUS_LED);
-		_delay_ms(1000);
-
+		if (x==1100) x=0;
 
         messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (FALSE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
         messageBuf[1] = TWI_SECONDS_ADDR;             // The first byte is used for commands.
         TWI_Start_Transceiver_With_Data( messageBuf, 2 );
 
+		enableAndWrite(&segDesc,0,x/100);
         waitForI2C();
 
         messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (TRUE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
         messageBuf[1] = 0;
         TWI_Start_Transceiver_With_Data( messageBuf, 4 );
 
+        enableAndWrite(&segDesc,1,x/100);
         waitForI2C();
 
         TWI_Get_Data_From_Transceiver( messageBuf, 4 );
 
-        printf("Data 0: %x\n",messageBuf[0]);
-        printf("Data 1: %x\n",messageBuf[1]);
+        //printf("Data 0: %x\n",messageBuf[0]);
+        //printf("Data 1: %x\n",messageBuf[1]);
 
-        printf("Tiempo(hh:mm:ss) > %x:%x:%x\n",messageBuf[3],messageBuf[2],messageBuf[1]);
+        //printf("Tiempo(hh:mm:ss) > %x:%x:%x\n",messageBuf[3],messageBuf[2],messageBuf[1]);
 
-        _delay_ms(1000);
 
 
     }
@@ -133,6 +145,12 @@ int main (void)
 void ioinit (void)
 {
 	sbi(DDRC,DDC7);
+
+	//Set A port complete out
+	DDRA=0xFF;
+
+	DDRB |= 0b00000011;
+
 	/* Set baud rate */
 	UBRR0H = (unsigned char)(MYUBRR>>8);
 	UBRR0L = (unsigned char)MYUBRR;
