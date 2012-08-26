@@ -69,6 +69,7 @@ int main (void)
 	uint16_t x = 0;
 	unsigned char messageBuf[4];
 	unsigned char TWI_targetSlaveAddress;
+	uint8_t secL, secH;
 
 	sevenSegDescriptor segDesc;
 	displayCommon common [2];
@@ -84,26 +85,18 @@ int main (void)
 	segDesc.ledPort = (uint8_t *) &PORTA;
 	segDesc.common = common;
 
-	TWI_targetSlaveAddress   = 0b01101111;
+	TWI_targetSlaveAddress   = 0b01101000;
 
     ioinit(); //Setup IO pins and defaults
     TWI_Master_Initialise();
     sei();
 
     messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (FALSE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
-    messageBuf[1] = 0x07;             // The first byte is used for commands.
+    messageBuf[1] = 0x00;             // The first byte is used for commands.
     messageBuf[2] = 0x10;             // The first byte is used for commands.
     TWI_Start_Transceiver_With_Data( messageBuf, 3 );
 
     waitForI2C();
-
-
-//    messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (FALSE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
-//    messageBuf[1] = TWI_SECONDS_ADDR;             // The first byte is used for commands.
-//    messageBuf[2] = 8;             // The first byte is used for commands.
-//    TWI_Start_Transceiver_With_Data( messageBuf, 3 );
-//
-//    waitForI2C();
 
 
     while(1)
@@ -114,27 +107,31 @@ int main (void)
 		x++;
 		if (x==1100) x=0;
 
+		enableAndWrite(&segDesc,0,secH);
+
         messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (FALSE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
         messageBuf[1] = TWI_SECONDS_ADDR;             // The first byte is used for commands.
         TWI_Start_Transceiver_With_Data( messageBuf, 2 );
 
-		enableAndWrite(&segDesc,0,x/100);
         waitForI2C();
 
         messageBuf[0] = (TWI_targetSlaveAddress<<TWI_ADR_BITS) | (TRUE	<<TWI_READ_BIT); // The first byte must always consit of General Call code or the TWI slave address.
         messageBuf[1] = 0;
         TWI_Start_Transceiver_With_Data( messageBuf, 4 );
 
-        enableAndWrite(&segDesc,1,x/100);
+        enableAndWrite(&segDesc,1,secL);
         waitForI2C();
 
         TWI_Get_Data_From_Transceiver( messageBuf, 4 );
 
+        //comentamos un poco esto para que no haga glitches el el display
         //printf("Data 0: %x\n",messageBuf[0]);
         //printf("Data 1: %x\n",messageBuf[1]);
 
         //printf("Tiempo(hh:mm:ss) > %x:%x:%x\n",messageBuf[3],messageBuf[2],messageBuf[1]);
 
+        secL = messageBuf[1] & 0x0F;
+        secH = (messageBuf[1] & 0xF0) >> 4;
 
 
     }
