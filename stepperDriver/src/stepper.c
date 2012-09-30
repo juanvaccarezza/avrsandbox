@@ -16,9 +16,14 @@ void StepperInit()
 }
 
 
-void StepperStepCCW()
+void StepperStepCCW(stepperRegist * registers)
 {
-
+	if(registers->currentPattern == 0){
+			registers->currentPattern = registers->patternLength -1;
+		} else {
+			registers->currentPattern--;
+		}
+		__STEPPER_PORT = ((__STEPPER_PORT & ~(0x0F<<STEPPER_POSITION))| (registers->pattern[registers->currentPattern]<<STEPPER_POSITION));
 }
 
 void StepperStepCW(stepperRegist * registers)

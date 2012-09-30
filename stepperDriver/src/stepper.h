@@ -17,5 +17,5 @@ typedef struct stepperRegist_t{
 
 void StepperInit();
 void StepperStepCW(stepperRegist* regist);
-void StepperStepCCW();
+void StepperStepCCW(stepperRegist* regist);
 #endif /* STEPPER_H_ */

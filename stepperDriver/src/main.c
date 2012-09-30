@@ -27,25 +27,22 @@ void main()
    while(1)
    {
 
-      for(uint16_t i=0;i<24*850;i++)
+      for(uint16_t i=0;i<24*40;i++)
       {
          StepperStepCW(&regist);     //Step Clock wise
 
-         //_delay_loop_2(10000);
-         _delay_ms(10);
+         _delay_ms(1);
          PORTA &= 0xF0;
-         _delay_ms(400);
+         _delay_ms(1);
 
       }
 
-  //  for(uint16_t i=0;i<24*85;i++)
-    //{
-      // StepperStepCCW();    //Step Counter Clock wise
-//
-  //     _delay_loop_2(10000);
-     //
+     for(uint16_t i=0;i<24*5;i++)
+     {
+        StepperStepCCW(&regist);    //Step Counter Clock wise
+        _delay_loop_2(10000);
+     }
+
    }
-
 }
-
 
